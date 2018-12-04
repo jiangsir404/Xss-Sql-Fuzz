@@ -3,7 +3,7 @@
 一个burpsuite 插件 用来fuzz xss和sql注入, 可以对post,get 的所有参数一键自动添加上我们的payload.
 
 ## Usage
-Extender->Option 添加jython包
+Extender->Option 添加jython包   
 Extender->Extensions->Add 添加Xss-Sql-Fuzz.py 插件。
 
 ## ToDO
