@@ -16,6 +16,7 @@ from javax.swing import JMenu
 from javax.swing import JMenuItem
 import hashlib
 import urllib
+import json
 
 
 class BurpExtender(IBurpExtender, IHttpListener,IContextMenuFactory):
@@ -36,11 +37,14 @@ class BurpExtender(IBurpExtender, IHttpListener,IContextMenuFactory):
         self.menus.append(self.mainMenu)
         self.invocation = invocation
         #print invocation.getSelectedMessages()[0].getRequest()
-        menuItem = ['addXFF','post fuzz1:x\'"><rivirtest>','post fuzz2:</script><img+src=0+onerror=alert(1)>','post fuzz3:\'-sleep(3)-\'','get fuzz1:x\'"><rivirtest>',
+        menuItem = ['addXFF','addReferer','post fuzz1:x\'"><rivirtest>','post fuzz2:</script><img+src=0+onerror=alert(1)>','post fuzz3:\'-sleep(3)-\'','get fuzz1:x\'"><rivirtest>',
         'get fuzz2:</script><img+src=0+onerror=alert(1)>','get fuzz3:\'-sleep(3)-\'']
         for tool in menuItem:
             #self.mainMenu.add(JMenuItem(tool))
             if tool == 'addXFF':
+                menu = JMenuItem(tool,None,actionPerformed=lambda x:self.modifyHeader(x))
+                self.mainMenu.add(menu)
+            elif tool == 'addReferer':
                 menu = JMenuItem(tool,None,actionPerformed=lambda x:self.modifyHeader(x))
                 self.mainMenu.add(menu)
             elif tool.startswith('post fuzz'):
@@ -65,7 +69,20 @@ class BurpExtender(IBurpExtender, IHttpListener,IContextMenuFactory):
             self.body = self._helpers.bytesToString(bodyBytes) #bytes to string转换一下
             #print 'self.body:',self.body
             newMessage = self._helpers.buildHttpMessage(self.headers, self.body)
-            currentRequest.setRequest(newMessage) #setRequest() 会动态更新setRequest
+            currentRequest.setRequest(newMessage) #setRequest() 会动态更新setRequest\
+        elif x.getSource().text == 'addReferer':
+            currentRequest = self.invocation.getSelectedMessages()[0]  #getSelectedMessages()返回数组，但有时为1个，有时2个
+            requestInfo = self._helpers.analyzeRequest(currentRequest) # 该部分实际获取到的是全部的Http请求包
+            self.headers = list(requestInfo.getHeaders())
+            print 'getUrl:',requestInfo.getUrl()
+            self.headers.append('Referer: '+requestInfo.getUrl().toString())
+            print self.headers
+            bodyBytes = currentRequest.getRequest()[requestInfo.getBodyOffset():] # bytes[]类型
+            self.body = self._helpers.bytesToString(bodyBytes) #bytes to string转换一下
+            #print 'self.body:',self.body
+            newMessage = self._helpers.buildHttpMessage(self.headers, self.body)
+            currentRequest.setRequest(newMessage)
+            
 
     def postFuzz(self,x):
         if x.getSource().text.startswith('post fuzz'):
@@ -109,17 +126,36 @@ class BurpExtender(IBurpExtender, IHttpListener,IContextMenuFactory):
     def update_body(self, body=""):
         try:
             o = body
-            # n = 'id=1<img>&x=1<img>&d=1<img>'
-            params = o.split('&')
-            white_action = ['submit','token']
-            for i in range(len(params)):
-                # querys = copy.deepcopy(params)
-                if self.Filter(white_action,params[i].split('=')[0]):
-                    continue
-                params[i] = params[i] + self.payload
-            n = '&'.join(params)
-            #print 'n:',n
-            return o,n
+            white_action = ['submit','token','code','id','password']
+            #print 'body:',body
+            for item in self.headers:
+                if (item.startswith('Content-Type:') and 'application/json' in item) or body.startswith('{"'):
+                    json_type = 1
+                    break
+                else:
+                    json_type = 0
+            #print 'json_type:',json_type
+            if json_type == 0:
+                params = o.split('&')
+                for i in range(len(params)):
+                    # querys = copy.deepcopy(params)
+                    if self.Filter(white_action,params[i].split('=')[0]):
+                        continue
+                    params[i] = params[i] + self.payload
+                n = '&'.join(params)
+                #print 'n:',n
+                return o,n
+            if json_type == 1:
+                print 'json type'
+                data = json.loads(o)
+                print 'data:',data
+                for item in data:
+                    if self.Filter(white_action,item):
+                        continue
+                    data[item] = data[item]+self.payload
+                n = json.dumps(data)
+                print 'n:',n
+                return o,n
         except Exception,e:
             return e
 

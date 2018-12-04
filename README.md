@@ -10,8 +10,11 @@ Extender->Extensions->Add 添加Xss-Sql-Fuzz.py 插件。
 - [x] 对GET型参数添加payload
 - [x] 对POST型参数添加payload
 - [x] 对响应中的unicode 解码
-- [x] 添加XFF头
 - [x] 对GET POST型中的一些特殊参数比如token,submit, code,sign，action这些参数，会自动进行模糊匹配跳过。
+- [x] 添加XFF头
+- [x] 添加Referer(基于host头)
+- [x] 对json格式的post数据进行处理
+- [ ] 生成json csrf 表单
 
 如果想自定义payload, 直接再代码里面改即可。
 
