@@ -74,9 +74,9 @@ class BurpExtender(IBurpExtender, IHttpListener,IContextMenuFactory):
             currentRequest = self.invocation.getSelectedMessages()[0]  #getSelectedMessages()返回数组，但有时为1个，有时2个
             requestInfo = self._helpers.analyzeRequest(currentRequest) # 该部分实际获取到的是全部的Http请求包
             self.headers = list(requestInfo.getHeaders())
-            print 'getUrl:',requestInfo.getUrl()
+            #print 'getUrl:',requestInfo.getUrl()
             self.headers.append('Referer: '+requestInfo.getUrl().toString())
-            print self.headers
+            #print self.headers
             bodyBytes = currentRequest.getRequest()[requestInfo.getBodyOffset():] # bytes[]类型
             self.body = self._helpers.bytesToString(bodyBytes) #bytes to string转换一下
             #print 'self.body:',self.body
@@ -146,15 +146,13 @@ class BurpExtender(IBurpExtender, IHttpListener,IContextMenuFactory):
                 #print 'n:',n
                 return o,n
             if json_type == 1:
-                print 'json type'
                 data = json.loads(o)
-                print 'data:',data
                 for item in data:
                     if self.Filter(white_action,item):
                         continue
                     data[item] = data[item]+self.payload
                 n = json.dumps(data)
-                print 'n:',n
+                #print 'n:',n
                 return o,n
         except Exception,e:
             return e
@@ -183,7 +181,7 @@ class BurpExtender(IBurpExtender, IHttpListener,IContextMenuFactory):
                     else:
                         new_headers.append(header)
 
-                print new_headers
+                #print new_headers
 
                 body = response[analyzedResponse.getBodyOffset():]
                 body_string = body.tostring()
